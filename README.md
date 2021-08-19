@@ -10,7 +10,9 @@
 
 * 使用示例：
 
-`glog.Info("hello world!") // 打印INFO级别的日志`
+`glog.I("hello world!") // 打印INFO级别的日志`
+
+`glog.FuncDepth(1).I("hello world!") // 打印INFO级别的日志，并且函数名为上一层`
 
 * 关闭字体颜色示例：
 
@@ -20,9 +22,9 @@
 
 `glog.EnableFuncName(false)`
 
-* 设置日志级别：
+* 设置最低日志级别：
 
-`glog.SetLevel(glog.LevelInfo)`
+`glog.SetMinLevel(glog.LevelInfo)`
 
 ## 测试
 

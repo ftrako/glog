@@ -12,12 +12,12 @@ import (
 // log.Println()接口二次封装，接口更丰富
 
 type Logger struct {
-	Color     bool `json:"color"`      // 是否开启字体颜色
-	Prefix    bool `json:"prefix"`     // 是否开启前缀，比如[INFO]
-	Func      bool `json:"func"`       // 是否显示函数名
-	Flag      int  `json:"flag"`       // 属性，参考log.LstdFlags
-	Level     int  `json:"level"`      // 日志级别，参考Level类型
-	CallDepth int  `json:"call_depth"` // 调用函数深度，特意提供可支持外部修改
+	Color     bool  `json:"color"`      // 是否开启字体颜色
+	Prefix    bool  `json:"prefix"`     // 是否开启前缀，比如[INFO]
+	Func      bool  `json:"func"`       // 是否显示函数名
+	Flag      int   `json:"flag"`       // 属性，参考log.LstdFlags
+	MinLevel  Level `json:"min_level"`  // 最低日志级别，参考Level类型
+	CallDepth int   `json:"call_depth"` // 调用函数深度，特意提供可支持外部修改
 }
 
 func NewLogger() *Logger {
@@ -26,64 +26,42 @@ func NewLogger() *Logger {
 	b.Color = false
 	b.Prefix = true
 	b.Func = true
-	b.Level = LevelTrace
+	b.MinLevel = LevelDebug
 	b.Flag = log.Lmicroseconds | log.Lshortfile
 	b.CallDepth = 3
 	return b
 }
 
-func (p *Logger) Trace(f interface{}, v ...interface{}) {
-	p.write(LevelTrace, p.CallDepth, f, v...)
+func (p *Logger) clone() *Logger {
+	return &Logger{
+		Color:     p.Color,
+		Prefix:    p.Prefix,
+		Func:      p.Func,
+		MinLevel:  p.MinLevel,
+		Flag:      p.Flag,
+		CallDepth: p.CallDepth,
+	}
 }
 
-func (p *Logger) TraceDepth(depth int, f interface{}, v ...interface{}) {
-	p.write(LevelTrace, depth, f, v...)
+// ln - true表示自动换行
+func (p *Logger) D(f interface{}, v ...interface{}) {
+	p.write(LevelDebug, f, v...)
 }
 
-func (p *Logger) Debug(f interface{}, v ...interface{}) {
-	p.write(LevelDebug, p.CallDepth, f, v...)
+func (p *Logger) I(f interface{}, v ...interface{}) {
+	p.write(LevelInfo, f, v...)
 }
 
-func (p *Logger) DebugDepth(depth int, f interface{}, v ...interface{}) {
-	p.write(LevelDebug, depth, f, v...)
+func (p *Logger) W(f interface{}, v ...interface{}) {
+	p.write(LevelWarn, f, v...)
 }
 
-func (p *Logger) Info(f interface{}, v ...interface{}) {
-	p.write(LevelInfo, p.CallDepth, f, v...)
+func (p *Logger) E(f interface{}, v ...interface{}) {
+	p.write(LevelError, f, v...)
 }
 
-func (p *Logger) InfoDepth(depth int, f interface{}, v ...interface{}) {
-	p.write(LevelInfo, depth, f, v...)
-}
-
-func (p *Logger) Warn(f interface{}, v ...interface{}) {
-	p.write(LevelWarn, p.CallDepth, f, v...)
-}
-
-func (p *Logger) WarnDepth(depth int, f interface{}, v ...interface{}) {
-	p.write(LevelWarn, depth, f, v...)
-}
-
-func (p *Logger) Error(f interface{}, v ...interface{}) {
-	p.write(LevelError, p.CallDepth, f, v...)
-}
-
-func (p *Logger) ErrorDepth(depth int, f interface{}, v ...interface{}) {
-	p.write(LevelError, depth, f, v...)
-}
-
-func (p *Logger) Panic(f interface{}, v ...interface{}) {
-	p.write(LevelFatal, p.CallDepth, f, v...)
-	panic(p.format(f, v...))
-}
-
-func (p *Logger) PanicDepth(depth int, f interface{}, v ...interface{}) {
-	p.write(LevelFatal, depth, f, v...)
-	panic(p.format(f, v...))
-}
-
-func (p *Logger) write(level Level, depth int, f interface{}, v ...interface{}) {
-	if int(level) < p.Level { // 级别限制
+func (p *Logger) write(level Level, f interface{}, v ...interface{}) {
+	if level < p.MinLevel { // 级别限制
 		return
 	}
 	now := time.Now()
@@ -92,7 +70,7 @@ func (p *Logger) write(level Level, depth int, f interface{}, v ...interface{}) 
 	if p.Flag&(log.Lshortfile|log.Llongfile) != 0 {
 		var ok bool
 		var funcName = ""
-		fnc, file, line, ok := runtime.Caller(depth)
+		fnc, file, line, ok := runtime.Caller(p.CallDepth)
 		if !ok {
 			file = "???"
 			line = 0
@@ -139,9 +117,12 @@ func (p *Logger) write(level Level, depth int, f interface{}, v ...interface{}) 
 	if p.Color {
 		str = colors[level](str)
 	}
+
 	fmt.Println(str)
 }
 
+// f - format
+// v - 系列参数
 func (p *Logger) format(f interface{}, v ...interface{}) string {
 	var msg string
 	switch f.(type) {
