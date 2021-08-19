@@ -43,15 +43,15 @@ func FuncDepth(depth int) *Logger {
 }
 
 func D(f interface{}, v ...interface{}) {
-	FuncDepth(0).D(f, v...)
+	FuncDepth(1).D(f, v...)
 }
 
 func I(f interface{}, v ...interface{}) {
-	FuncDepth(0).I(f, v...)
+	FuncDepth(1).I(f, v...)
 }
 
 func W(f interface{}, v ...interface{}) {
-	FuncDepth(0).W(f, v...)
+	FuncDepth(1).W(f, v...)
 }
 
 func E(f interface{}, v ...interface{}) {
