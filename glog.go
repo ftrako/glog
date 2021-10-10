@@ -55,5 +55,5 @@ func W(f interface{}, v ...interface{}) {
 }
 
 func E(f interface{}, v ...interface{}) {
-	FuncDepth(0).E(f, v...)
+	FuncDepth(1).E(f, v...)
 }
