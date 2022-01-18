@@ -3,6 +3,7 @@ package glog
 import (
 	"fmt"
 	"log"
+	"os"
 	"runtime"
 	"strconv"
 	"strings"
@@ -118,7 +119,11 @@ func (p *Logger) write(level Level, f interface{}, v ...interface{}) {
 		str = colors[level](str)
 	}
 
-	fmt.Println(str)
+	if level < LevelError {
+		fmt.Println(str)
+	} else {
+		_, _ = os.Stderr.WriteString(str)
+	}
 }
 
 // f - format
